@@ -1,0 +1,70 @@
+# 베이스 이미지: CUDA 11.8 + cuDNN + Ubuntu 20.04
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+
+# 비상호작용 모드 설정
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 기본 패키지 설치
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    ca-certificates \
+    python3.8 \
+    python3.8-dev \
+    python3-pip \
+    python3-setuptools \
+    python3-distutils \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* 
+
+RUN apt-get update && apt-get install -y libgl1
+
+# python3 → python, pip3 → pip 링크 (이미 있으면 생략)
+RUN [ -f /usr/bin/python ] || ln -s /usr/bin/python3.8 /usr/bin/python && \
+    [ -f /usr/bin/pip ] || ln -s /usr/bin/pip3 /usr/bin/pip
+
+# pip 업그레이드 및 종속성 사전 설치
+RUN pip install --upgrade pip && \
+    pip install "networkx<3.0" "numpy==1.21.5" typing-extensions
+
+
+# ----------------------------------------------------------------------------------------
+# PyTorch 2.1.0 + CUDA 11.8 설치 (종속성 제외)
+RUN pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --no-deps --index-url https://download.pytorch.org/whl/cu118
+
+# OpenPCDet 및 3D 검출 관련 패키지 설치
+RUN pip install \
+    pytorch-lightning==2.1.2 \
+    torchmetrics==1.2.0 \
+    six==1.17.0 \
+    torch-geometric==2.3.1 \
+    torch-scatter==2.1.2+pt21cu118 -f https://data.pyg.org/whl/torch-2.1.0+cu118.html \
+    torch-cluster==1.6.3+pt21cu118 -f https://data.pyg.org/whl/torch-2.1.0+cu118.html \
+    tqdm \
+    easydict \
+    pyyaml
+
+RUN pip install \
+    numba==0.58.1 \
+    SharedArray==3.2.4 \
+    pyquaternion==0.9.9 \ 
+    opencv-python \
+    av2==0.2.0 \
+    tensorboardX \
+    matplotlib \
+    nano \
+    thop
+
+RUN pip install protobuf==3.20.3 --force-reinstall
+# --------------------------------------------------------------------------------------------
+
+
+# 작업 디렉토리 설정
+WORKDIR /workspace
+
+# 엔트리포인트를 bash로
+CMD ["/bin/bash"]
