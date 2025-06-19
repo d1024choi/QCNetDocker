@@ -1,3 +1,4 @@
+
 # Docker 이미지 빌드 매뉴얼 (QCNet 학습 환경)
 
 본 매뉴얼은 Ubuntu 환경에서 미래 궤적 예측 모델 학습을 위한 Docker 이미지를 직접 빌드하는 절차를 설명합니다.
@@ -39,12 +40,7 @@ docker build -t qcnet-env:torch2.1.0 -f Dockerfile_qcnet_torch2.1.0 .
 생성된 Docker 이미지를 실행합니다:
 
 ```
-docker run --gpus all -it --rm \
-  --ipc=host \
-  --shm-size=8g \
-  -v /path/to/QCNet:/workspace \
-  qcnet-env:torch2.1.0 \
-  /bin/bash
+sudo docker run --gpus all -it --rm --ipc=host --shm-size=8g -v /path/to/QCNet:/workspace qcnet-env:torch2.1.0 /bin/bash
 ``` 
 
 * /path/to/QCNet에는 host가 실행중인 Docker와 공유할 폴더 경로 입력
@@ -61,3 +57,30 @@ docker save -o qcnet-env:torch2.1.0.tar qcnet-env:torch2.1.0
 ``` 
 docker load -i qcnet-env:torch2.1.0.tar
 ``` 
+
+## 5. (Optional) NVidia Docker Container 설치
+
+* Install NVIDIA Container Toolkit
+
+```
+distribution=$(. /etc/os-release; echo $ID$VERSION_ID)
+
+sudo apt update
+sudo apt install -y curl gnupg lsb-release
+
+curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey \
+  | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list \
+  | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#' \
+  | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
+
+sudo apt update
+sudo apt install -y nvidia-container-toolkit
+```
+* Configure Docker to use NVIDIA runtime
+
+```
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
